@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Maison Royale | Luxury Hotel</title>
+
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="container nav-content">
+
+        <a href="/" class="logo">
+            MAISON <span>ROYALE</span>
+        </a>
+
+        <nav>
+            <a href="#rooms">Rooms</a>
+            <a href="#experience">Experience</a>
+            <a href="#contact">Contact</a>
+        </nav>
+
+        <a href="#rooms" class="book-button">
+            Book a Stay
+        </a>
+
+    </div>
+</header>
+
+<main>
+
+    <section class="hero">
+
+        <div class="hero-overlay"></div>
+
+        <div class="container hero-content">
+
+            <p class="eyebrow">
+                LUXURY • COMFORT • EXPERIENCE
+            </p>
+
+            <h1>
+                Stay somewhere
+                <span>extraordinary.</span>
+            </h1>
+
+            <p class="hero-description">
+                Experience refined hospitality, exceptional comfort,
+                and unforgettable moments at Maison Royale.
+            </p>
+
+            <a href="#rooms" class="hero-button">
+                Explore Our Rooms ↓
+            </a>
+
+        </div>
+
+    </section>
+
+    <section id="experience" class="intro">
+
+        <div class="container intro-grid">
+
+            <div>
+                <p class="eyebrow">
+                    THE MAISON ROYALE EXPERIENCE
+                </p>
+
+                <h2>
+                    Hospitality designed
+                    around you.
+                </h2>
+            </div>
+
+            <div>
+                <p class="intro-text">
+                    From the moment you arrive, every detail is designed
+                    to make your stay comfortable, effortless, and memorable.
+                    Discover elegant spaces, exceptional service, and rooms
+                    created for modern travellers.
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section id="rooms" class="rooms">
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <div>
+                    <p class="eyebrow">
+                        ACCOMMODATION
+                    </p>
+
+                    <h2>
+                        Find your perfect stay.
+                    </h2>
+                </div>
+
+                <p>
+                    Choose from our collection of carefully designed rooms
+                    and suites.
+                </p>
+
+            </div>
+
+            <div class="room-grid">
+
+                {{range .Rooms}}
+
+                <article class="room-card">
+
+                    <div class="room-image">
+                        <span>ROOM {{.ID}}</span>
+                    </div>
+
+                    <div class="room-content">
+
+                        <div class="room-top">
+
+                            <h3>
+                                {{.Name}}
+                            </h3>
+
+                            <strong>
+                                ₦{{.Price}} <small>/ night</small>
+                            </strong>
+
+                        </div>
+
+                        <p>
+                            {{.Description}}
+                        </p>
+
+                        <div class="room-bottom">
+
+                            <span>
+                                Up to {{.Capacity}} guests
+                            </span>
+
+                            <a href="#booking">
+                                Reserve →
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+                {{end}}
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <section id="booking" class="booking">
+
+        <div class="container booking-container">
+
+            <div>
+
+                <p class="eyebrow">
+                    RESERVATION
+                </p>
+
+                <h2>
+                    Plan your stay.
+                </h2>
+
+                <p>
+                    Select your dates and preferred room.
+                    We'll take care of the rest.
+                </p>
+
+            </div>
+
+            <form class="booking-form">
+
+                <div class="form-group">
+                    <label>Check-in</label>
+                    <input type="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Check-out</label>
+                    <input type="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Guests</label>
+
+                    <select>
+                        <option>1 Guest</option>
+                        <option>2 Guests</option>
+                        <option>3 Guests</option>
+                        <option>4 Guests</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+
+                    <label>
+                        Room
+                    </label>
+
+                    <select>
+
+                        {{range .Rooms}}
+
+                        <option>
+                            {{.Name}}
+                        </option>
+
+                        {{end}}
+
+                    </select>
+
+                </div>
+
+                <button type="submit">
+                    Check Availability →
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+    <section id="contact" class="contact">
+
+        <div class="container">
+
+            <p class="eyebrow">
+                MAISON ROYALE
+            </p>
+
+            <h2>
+                Your next escape
+                <span>starts here.</span>
+            </h2>
+
+            <p>
+                Luxury accommodation, thoughtful service,
+                and an experience worth remembering.
+            </p>
+
+            <a href="#booking" class="hero-button">
+                Make a Reservation
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+<footer>
+
+    <div class="container footer-content">
+
+        <div>
+            <strong>
+                MAISON ROYALE
+            </strong>
+
+            <p>
+                Luxury hospitality, redefined.
+            </p>
+        </div>
+
+        <p>
+            © 2026 Maison Royale
+        </p>
+
+    </div>
+
+</footer>
+
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>
+```
