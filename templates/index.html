@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,20 +22,18 @@
             <a href="#rooms">Rooms</a>
             <a href="#experience">Experience</a>
             <a href="#contact">Contact</a>
+            <a href="#booking" class="nav-button">Book a Stay</a>
         </nav>
-
-        <a href="#rooms" class="book-button">
-            Book a Stay
-        </a>
 
     </div>
 </header>
 
+
 <main>
 
-    <section class="hero">
+    <!-- HERO -->
 
-        <div class="hero-overlay"></div>
+    <section class="hero">
 
         <div class="container hero-content">
 
@@ -49,46 +46,62 @@
                 <span>extraordinary.</span>
             </h1>
 
-            <p class="hero-description">
-                Experience refined hospitality, exceptional comfort,
-                and unforgettable moments at Maison Royale.
+            <p class="hero-text">
+                Experience refined hospitality, elegant spaces,
+                and exceptional service at Maison Royale.
             </p>
 
-            <a href="#rooms" class="hero-button">
-                Explore Our Rooms ↓
+            <a href="#booking" class="primary-button">
+                Reserve Your Stay
             </a>
 
         </div>
 
     </section>
 
-    <section id="experience" class="intro">
+
+    <!-- INTRO -->
+
+    <section class="intro" id="experience">
 
         <div class="container intro-grid">
 
             <div>
+
                 <p class="eyebrow">
-                    THE MAISON ROYALE EXPERIENCE
+                    WELCOME TO MAISON ROYALE
                 </p>
 
                 <h2>
-                    Hospitality designed
+                    A stay designed
                     around you.
                 </h2>
+
             </div>
 
             <div>
-                <p class="intro-text">
+
+                <p>
                     From the moment you arrive, every detail is designed
-                    to make your stay comfortable, effortless, and memorable.
-                    Discover elegant spaces, exceptional service, and rooms
-                    created for modern travellers.
+                    to make your stay effortless. Discover beautifully
+                    appointed rooms, exceptional dining, and thoughtful
+                    hospitality.
                 </p>
+
+                <p>
+                    Whether you're visiting for business, romance, or
+                    relaxation, Maison Royale gives you a place to slow
+                    down and enjoy the experience.
+                </p>
+
             </div>
 
         </div>
 
     </section>
+
+
+    <!-- ROOMS -->
 
     <section id="rooms" class="rooms">
 
@@ -97,6 +110,7 @@
             <div class="section-heading">
 
                 <div>
+
                     <p class="eyebrow">
                         ACCOMMODATION
                     </p>
@@ -104,6 +118,7 @@
                     <h2>
                         Find your perfect stay.
                     </h2>
+
                 </div>
 
                 <p>
@@ -112,6 +127,7 @@
                 </p>
 
             </div>
+
 
             <div class="room-grid">
 
@@ -165,61 +181,114 @@
 
     </section>
 
+
+    <!-- BOOKING -->
+
     <section id="booking" class="booking">
 
         <div class="container booking-container">
 
-            <div>
+            <div class="booking-intro">
 
                 <p class="eyebrow">
-                    RESERVATION
+                    RESERVATIONS
                 </p>
 
                 <h2>
-                    Plan your stay.
+                    Your next stay
+                    starts here.
                 </h2>
 
                 <p>
-                    Select your dates and preferred room.
+                    Select your dates, guests, and preferred room.
                     We'll take care of the rest.
                 </p>
 
             </div>
 
-            <form class="booking-form">
+
+            <form class="booking-form" action="/book" method="POST">
 
                 <div class="form-group">
-                    <label>Check-in</label>
-                    <input type="date" required>
+
+                    <label for="check-in">
+                        Check-in
+                    </label>
+
+                    <input
+                        type="date"
+                        id="check-in"
+                        name="check_in"
+                        required
+                    >
+
                 </div>
 
+
                 <div class="form-group">
-                    <label>Check-out</label>
-                    <input type="date" required>
+
+                    <label for="check-out">
+                        Check-out
+                    </label>
+
+                    <input
+                        type="date"
+                        id="check-out"
+                        name="check_out"
+                        required
+                    >
+
                 </div>
 
-                <div class="form-group">
-                    <label>Guests</label>
 
-                    <select>
-                        <option>1 Guest</option>
-                        <option>2 Guests</option>
-                        <option>3 Guests</option>
-                        <option>4 Guests</option>
+                <div class="form-group">
+
+                    <label for="guests">
+                        Guests
+                    </label>
+
+                    <select
+                        id="guests"
+                        name="guests"
+                        required
+                    >
+
+                        <option value="1">
+                            1 Guest
+                        </option>
+
+                        <option value="2">
+                            2 Guests
+                        </option>
+
+                        <option value="3">
+                            3 Guests
+                        </option>
+
+                        <option value="4">
+                            4 Guests
+                        </option>
+
                     </select>
+
                 </div>
+
 
                 <div class="form-group">
 
-                    <label>
+                    <label for="room">
                         Room
                     </label>
 
-                    <select>
+                    <select
+                        id="room"
+                        name="room"
+                        required
+                    >
 
                         {{range .Rooms}}
 
-                        <option>
+                        <option value="{{.ID}}">
                             {{.Name}}
                         </option>
 
@@ -229,8 +298,12 @@
 
                 </div>
 
-                <button type="submit">
-                    Check Availability →
+
+                <button
+                    type="submit"
+                    class="primary-button booking-button"
+                >
+                    Check Availability
                 </button>
 
             </form>
@@ -239,27 +312,40 @@
 
     </section>
 
+
+    <!-- CONTACT -->
+
     <section id="contact" class="contact">
 
-        <div class="container">
+        <div class="container contact-grid">
 
-            <p class="eyebrow">
-                MAISON ROYALE
-            </p>
+            <div>
 
-            <h2>
-                Your next escape
-                <span>starts here.</span>
-            </h2>
+                <p class="eyebrow">
+                    CONTACT
+                </p>
 
-            <p>
-                Luxury accommodation, thoughtful service,
-                and an experience worth remembering.
-            </p>
+                <h2>
+                    We'd love to
+                    welcome you.
+                </h2>
 
-            <a href="#booking" class="hero-button">
-                Make a Reservation
-            </a>
+            </div>
+
+            <div>
+
+                <p>
+                    12 Royal Crescent<br>
+                    Victoria Island<br>
+                    Lagos, Nigeria
+                </p>
+
+                <p>
+                    +234 800 000 0000<br>
+                    stay@maisonroyale.com
+                </p>
+
+            </div>
 
         </div>
 
@@ -267,30 +353,27 @@
 
 </main>
 
+
+<!-- FOOTER -->
+
 <footer>
 
     <div class="container footer-content">
 
-        <div>
-            <strong>
-                MAISON ROYALE
-            </strong>
-
-            <p>
-                Luxury hospitality, redefined.
-            </p>
+        <div class="logo">
+            MAISON <span>ROYALE</span>
         </div>
 
         <p>
-            © 2026 Maison Royale
+            © 2026 Maison Royale. All rights reserved.
         </p>
 
     </div>
 
 </footer>
 
+
 <script src="/static/js/app.js"></script>
 
 </body>
 </html>
-```

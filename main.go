@@ -39,6 +39,32 @@ var rooms = []Room{
 }
 
 func main() {
+	http.HandleFunc("/book", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Unable to process booking", http.StatusBadRequest)
+			return
+		}
+
+		checkIn := r.FormValue("check_in")
+		checkOut := r.FormValue("check_out")
+		guests := r.FormValue("guests")
+		roomID := r.FormValue("room")
+
+		log.Println("New booking received:")
+		log.Println("Check-in:", checkIn)
+		log.Println("Check-out:", checkOut)
+		log.Println("Guests:", guests)
+		log.Println("Room:", roomID)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Booking received successfully"))
+	})
+
 	tmpl := template.Must(
 		template.ParseFiles("templates/index.html"),
 	)
