@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"maison-royale/database"
 )
@@ -49,6 +50,7 @@ func main() {
 		template.ParseFiles(
 			"templates/index.html",
 			"templates/confirmation.html",
+			"templates/unavailable.html",
 		),
 	)
 
@@ -68,23 +70,63 @@ func main() {
 		guestsText := r.FormValue("guests")
 		roomIDText := r.FormValue("room")
 
+		// Make sure both dates were provided.
 		if checkIn == "" || checkOut == "" {
-			http.Error(w, "Check-in and check-out dates are required", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Check-in and check-out dates are required",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
+		// Validate check-in date.
+		checkInDate, err := time.Parse("2006-01-02", checkIn)
+		if err != nil {
+			http.Error(w, "Invalid check-in date", http.StatusBadRequest)
+			return
+		}
+
+		// Validate check-out date.
+		checkOutDate, err := time.Parse("2006-01-02", checkOut)
+		if err != nil {
+			http.Error(w, "Invalid check-out date", http.StatusBadRequest)
+			return
+		}
+
+		// Check-out must be after check-in.
+		if !checkOutDate.After(checkInDate) {
+			http.Error(
+				w,
+				"Check-out date must be after check-in date",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		// Convert guests to an integer.
 		guests, err := strconv.Atoi(guestsText)
 		if err != nil || guests < 1 {
-			http.Error(w, "Invalid number of guests", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Invalid number of guests",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
+		// Convert room ID to an integer.
 		roomID, err := strconv.Atoi(roomIDText)
 		if err != nil {
-			http.Error(w, "Invalid room", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Invalid room",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
+		// Find the selected room.
 		var selectedRoom Room
 		foundRoom := false
 
@@ -97,17 +139,92 @@ func main() {
 		}
 
 		if !foundRoom {
-			http.Error(w, "Room not found", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Room not found",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
+		// Make sure the number of guests fits the room.
 		if guests > selectedRoom.Capacity {
-			http.Error(w, "Too many guests for this room", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Too many guests for this room",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
+		// Check whether the room is already booked
+		// during any part of the requested stay.
+		var existingBooking int
+
+		availabilityQuery := `
+			SELECT COUNT(*)
+			FROM bookings
+			WHERE room_id = ?
+			AND check_in < ?
+			AND check_out > ?
+		`
+
+		err = db.QueryRow(
+			availabilityQuery,
+			roomID,
+			checkOut,
+			checkIn,
+		).Scan(&existingBooking)
+
+		if err != nil {
+			log.Println("Failed to check room availability:", err)
+
+			http.Error(
+				w,
+				"Unable to check room availability",
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		// If a booking overlaps, show the professional
+		// room unavailable page.
+		if existingBooking > 0 {
+			unavailableData := struct {
+				RoomName string
+				CheckIn  string
+				CheckOut string
+			}{
+				RoomName: selectedRoom.Name,
+				CheckIn:  checkIn,
+				CheckOut: checkOut,
+			}
+
+			if err := tmpl.ExecuteTemplate(
+				w,
+				"unavailable.html",
+				unavailableData,
+			); err != nil {
+				log.Println("Unavailable template error:", err)
+
+				http.Error(
+					w,
+					"Unable to show availability message",
+					http.StatusInternalServerError,
+				)
+			}
+
+			return
+		}
+
+		// The room is available, so create the booking.
 		query := `
-			INSERT INTO bookings (check_in, check_out, guests, room_id)
+			INSERT INTO bookings (
+				check_in,
+				check_out,
+				guests,
+				room_id
+			)
 			VALUES (?, ?, ?, ?)
 		`
 
@@ -118,8 +235,10 @@ func main() {
 			guests,
 			roomID,
 		)
+
 		if err != nil {
 			log.Println("Failed to save booking:", err)
+
 			http.Error(
 				w,
 				"Unable to save booking",
@@ -131,6 +250,7 @@ func main() {
 		bookingID, err := result.LastInsertId()
 		if err != nil {
 			log.Println("Failed to get booking ID:", err)
+
 			http.Error(
 				w,
 				"Unable to get booking ID",
@@ -146,6 +266,7 @@ func main() {
 		log.Println("Guests:", guests)
 		log.Println("Room:", selectedRoom.Name)
 
+		// Data sent to the confirmation page.
 		confirmationData := struct {
 			ID       int64
 			RoomName string
@@ -168,6 +289,7 @@ func main() {
 			confirmationData,
 		); err != nil {
 			log.Println("Confirmation template error:", err)
+
 			http.Error(
 				w,
 				"Unable to show confirmation",
@@ -177,6 +299,7 @@ func main() {
 		}
 	})
 
+	// Serve CSS and JavaScript files.
 	http.Handle(
 		"/static/",
 		http.StripPrefix(
@@ -185,6 +308,7 @@ func main() {
 		),
 	)
 
+	// Homepage.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -203,6 +327,7 @@ func main() {
 			data,
 		); err != nil {
 			log.Println("Template error:", err)
+
 			http.Error(
 				w,
 				"Unable to render page",

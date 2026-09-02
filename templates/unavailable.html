@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Booking Confirmed | Maison Royale</title>
+    <title>Room Unavailable | Maison Royale</title>
 
     <style>
         * {
@@ -26,13 +26,13 @@
 
         .container {
             width: 100%;
-            max-width: 760px;
+            max-width: 700px;
             text-align: center;
         }
 
         .logo {
             display: inline-block;
-            margin-bottom: 50px;
+            margin-bottom: 60px;
             color: #ffffff;
             text-decoration: none;
             font-family: Georgia, "Times New Roman", serif;
@@ -45,8 +45,8 @@
         }
 
         .card {
-            background: #111111;
             border: 1px solid #292929;
+            background: #111111;
             padding: 60px 45px;
         }
 
@@ -80,8 +80,8 @@
         }
 
         .message {
-            max-width: 560px;
-            margin: 0 auto 40px;
+            max-width: 520px;
+            margin: 0 auto 35px;
             color: #b8b8b8;
             font-size: 16px;
             line-height: 1.8;
@@ -90,35 +90,13 @@
         .details {
             border-top: 1px solid #292929;
             border-bottom: 1px solid #292929;
-            padding: 28px 0;
+            padding: 22px 0;
             margin-bottom: 35px;
+            color: #cccccc;
         }
 
-        .detail {
-            margin-bottom: 18px;
-        }
-
-        .detail:last-child {
-            margin-bottom: 0;
-        }
-
-        .label {
-            display: block;
-            color: #888888;
-            font-size: 11px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 7px;
-        }
-
-        .value {
+        .details strong {
             color: #ffffff;
-            font-size: 17px;
-        }
-
-        .booking-id {
-            color: #d4af37;
-            font-weight: bold;
         }
 
         .button {
@@ -175,65 +153,39 @@
     <div class="card">
 
         <div class="icon">
-            ✓
+            ×
         </div>
 
         <p class="eyebrow">
-            RESERVATION CONFIRMED
+            ROOM AVAILABILITY
         </p>
 
         <h1>
-            Your Stay Is Confirmed
+            Room Unavailable
         </h1>
 
         <p class="message">
-            Thank you for choosing Maison Royale.
-            Your reservation has been successfully secured.
-            We look forward to welcoming you.
+            We’re sorry, but the room you selected is already
+            reserved for part of your chosen stay.
+            Please select different dates or choose another room.
         </p>
 
         <div class="details">
+            <p>
+                <strong>{{.RoomName}}</strong>
+            </p>
 
-            <div class="detail">
-                <span class="label">Booking Reference</span>
-                <span class="value booking-id">#{{.ID}}</span>
-            </div>
-
-            <div class="detail">
-                <span class="label">Room</span>
-                <span class="value">{{.RoomName}}</span>
-            </div>
-
-            <div class="detail">
-                <span class="label">Check-in</span>
-                <span class="value">{{.CheckIn}}</span>
-            </div>
-
-            <div class="detail">
-                <span class="label">Check-out</span>
-                <span class="value">{{.CheckOut}}</span>
-            </div>
-
-            <div class="detail">
-                <span class="label">Guests</span>
-                <span class="value">{{.Guests}}</span>
-            </div>
-
-            <div class="detail">
-                <span class="label">Room Rate</span>
-                <span class="value">
-                    ₦{{.Price}}
-                </span>
-            </div>
-
+            <p>
+                {{.CheckIn}} → {{.CheckOut}}
+            </p>
         </div>
 
-        <a href="/" class="button">
-            Return to Maison Royale
+        <a href="/#booking" class="button">
+            Choose Another Stay
         </a>
 
         <a href="/" class="secondary">
-            Book Another Stay
+            Return to Maison Royale
         </a>
 
     </div>
