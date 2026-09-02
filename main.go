@@ -45,6 +45,13 @@ func main() {
 	db := database.Connect()
 	defer db.Close()
 
+	tmpl := template.Must(
+		template.ParseFiles(
+			"templates/index.html",
+			"templates/confirmation.html",
+		),
+	)
+
 	http.HandleFunc("/book", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -61,8 +68,13 @@ func main() {
 		guestsText := r.FormValue("guests")
 		roomIDText := r.FormValue("room")
 
+		if checkIn == "" || checkOut == "" {
+			http.Error(w, "Check-in and check-out dates are required", http.StatusBadRequest)
+			return
+		}
+
 		guests, err := strconv.Atoi(guestsText)
-		if err != nil {
+		if err != nil || guests < 1 {
 			http.Error(w, "Invalid number of guests", http.StatusBadRequest)
 			return
 		}
@@ -73,12 +85,39 @@ func main() {
 			return
 		}
 
+		var selectedRoom Room
+		foundRoom := false
+
+		for _, room := range rooms {
+			if room.ID == roomID {
+				selectedRoom = room
+				foundRoom = true
+				break
+			}
+		}
+
+		if !foundRoom {
+			http.Error(w, "Room not found", http.StatusBadRequest)
+			return
+		}
+
+		if guests > selectedRoom.Capacity {
+			http.Error(w, "Too many guests for this room", http.StatusBadRequest)
+			return
+		}
+
 		query := `
 			INSERT INTO bookings (check_in, check_out, guests, room_id)
 			VALUES (?, ?, ?, ?)
 		`
 
-		_, err = db.Exec(query, checkIn, checkOut, guests, roomID)
+		result, err := db.Exec(
+			query,
+			checkIn,
+			checkOut,
+			guests,
+			roomID,
+		)
 		if err != nil {
 			log.Println("Failed to save booking:", err)
 			http.Error(
@@ -89,19 +128,54 @@ func main() {
 			return
 		}
 
+		bookingID, err := result.LastInsertId()
+		if err != nil {
+			log.Println("Failed to get booking ID:", err)
+			http.Error(
+				w,
+				"Unable to get booking ID",
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
 		log.Println("Booking saved successfully")
+		log.Println("Booking ID:", bookingID)
 		log.Println("Check-in:", checkIn)
 		log.Println("Check-out:", checkOut)
 		log.Println("Guests:", guests)
-		log.Println("Room:", roomID)
+		log.Println("Room:", selectedRoom.Name)
 
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Booking received successfully"))
+		confirmationData := struct {
+			ID       int64
+			RoomName string
+			CheckIn  string
+			CheckOut string
+			Guests   int
+			Price    int
+		}{
+			ID:       bookingID,
+			RoomName: selectedRoom.Name,
+			CheckIn:  checkIn,
+			CheckOut: checkOut,
+			Guests:   guests,
+			Price:    selectedRoom.Price,
+		}
+
+		if err := tmpl.ExecuteTemplate(
+			w,
+			"confirmation.html",
+			confirmationData,
+		); err != nil {
+			log.Println("Confirmation template error:", err)
+			http.Error(
+				w,
+				"Unable to show confirmation",
+				http.StatusInternalServerError,
+			)
+			return
+		}
 	})
-
-	tmpl := template.Must(
-		template.ParseFiles("templates/index.html"),
-	)
 
 	http.Handle(
 		"/static/",
@@ -123,7 +197,11 @@ func main() {
 			Rooms: rooms,
 		}
 
-		if err := tmpl.Execute(w, data); err != nil {
+		if err := tmpl.ExecuteTemplate(
+			w,
+			"index.html",
+			data,
+		); err != nil {
 			log.Println("Template error:", err)
 			http.Error(
 				w,
