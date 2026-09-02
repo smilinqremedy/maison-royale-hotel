@@ -4,6 +4,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
+
+	"maison-royale/database"
 )
 
 type Room struct {
@@ -39,6 +42,9 @@ var rooms = []Room{
 }
 
 func main() {
+	db := database.Connect()
+	defer db.Close()
+
 	http.HandleFunc("/book", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -52,10 +58,38 @@ func main() {
 
 		checkIn := r.FormValue("check_in")
 		checkOut := r.FormValue("check_out")
-		guests := r.FormValue("guests")
-		roomID := r.FormValue("room")
+		guestsText := r.FormValue("guests")
+		roomIDText := r.FormValue("room")
 
-		log.Println("New booking received:")
+		guests, err := strconv.Atoi(guestsText)
+		if err != nil {
+			http.Error(w, "Invalid number of guests", http.StatusBadRequest)
+			return
+		}
+
+		roomID, err := strconv.Atoi(roomIDText)
+		if err != nil {
+			http.Error(w, "Invalid room", http.StatusBadRequest)
+			return
+		}
+
+		query := `
+			INSERT INTO bookings (check_in, check_out, guests, room_id)
+			VALUES (?, ?, ?, ?)
+		`
+
+		_, err = db.Exec(query, checkIn, checkOut, guests, roomID)
+		if err != nil {
+			log.Println("Failed to save booking:", err)
+			http.Error(
+				w,
+				"Unable to save booking",
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		log.Println("Booking saved successfully")
 		log.Println("Check-in:", checkIn)
 		log.Println("Check-out:", checkOut)
 		log.Println("Guests:", guests)
