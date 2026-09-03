@@ -1,11 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"maison-royale/database"
 )
@@ -16,6 +20,29 @@ type Room struct {
 	Description string
 	Price       int
 	Capacity    int
+}
+
+type Booking struct {
+	ID       int
+	RoomName string
+	CheckIn  string
+	CheckOut string
+	Guests   int
+}
+
+type RoomAvailability struct {
+	Name      string
+	Available bool
+}
+
+type DashboardData struct {
+	TotalBookings  int
+	TotalRooms     int
+	AvailableRooms int
+	Bookings       []Booking
+	CheckIn        string
+	CheckOut       string
+	Availability   []RoomAvailability
 }
 
 var rooms = []Room{
@@ -42,6 +69,123 @@ var rooms = []Room{
 	},
 }
 
+const sessionCookieName = "maison_admin_session"
+
+func isAuthenticated(r *http.Request) bool {
+	cookie, err := r.Cookie(sessionCookieName)
+
+	if err != nil {
+		return false
+	}
+
+	return cookie.Value == "authenticated"
+}
+
+func requireAdmin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !isAuthenticated(r) {
+			http.Redirect(
+				w,
+				r,
+				"/admin/login",
+				http.StatusSeeOther,
+			)
+			return
+		}
+
+		next(w, r)
+	}
+}
+
+func loadDashboardData(db *sql.DB) (DashboardData, error) {
+	var totalBookings int
+
+	err := db.QueryRow(
+		"SELECT COUNT(*) FROM bookings",
+	).Scan(&totalBookings)
+
+	if err != nil {
+		return DashboardData{}, err
+	}
+
+	bookings := []Booking{}
+
+	rows, err := db.Query(`
+		SELECT
+			bookings.id,
+			bookings.check_in,
+			bookings.check_out,
+			bookings.guests,
+			bookings.room_id
+		FROM bookings
+		ORDER BY bookings.id DESC
+	`)
+
+	if err != nil {
+		return DashboardData{}, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var booking Booking
+		var roomID int
+
+		err := rows.Scan(
+			&booking.ID,
+			&booking.CheckIn,
+			&booking.CheckOut,
+			&booking.Guests,
+			&roomID,
+		)
+
+		if err != nil {
+			return DashboardData{}, err
+		}
+
+		for _, room := range rooms {
+			if room.ID == roomID {
+				booking.RoomName = room.Name
+				break
+			}
+		}
+
+		bookings = append(bookings, booking)
+	}
+
+	if err := rows.Err(); err != nil {
+		return DashboardData{}, err
+	}
+
+	availableRooms := len(rooms)
+
+	for _, room := range rooms {
+		var roomBookings int
+
+		err := db.QueryRow(`
+			SELECT COUNT(*)
+			FROM bookings
+			WHERE room_id = ?
+			AND check_out > date('now')
+		`, room.ID).Scan(&roomBookings)
+
+		if err != nil {
+			return DashboardData{}, err
+		}
+
+		if roomBookings > 0 {
+			availableRooms--
+		}
+	}
+
+	return DashboardData{
+		TotalBookings:  totalBookings,
+		TotalRooms:     len(rooms),
+		AvailableRooms: availableRooms,
+		Bookings:       bookings,
+	}, nil
+}
+
 func main() {
 	db := database.Connect()
 	defer db.Close()
@@ -51,26 +195,227 @@ func main() {
 			"templates/index.html",
 			"templates/confirmation.html",
 			"templates/unavailable.html",
+			"templates/admin/dashboard.html",
+			"templates/admin/login.html",
 		),
 	)
 
-	http.HandleFunc("/book", func(w http.ResponseWriter, r *http.Request) {
+	// =========================================================
+	// ADMIN LOGIN
+	// =========================================================
+
+	http.HandleFunc("/admin/login", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			if isAuthenticated(r) {
+				http.Redirect(
+					w,
+					r,
+					"/admin",
+					http.StatusSeeOther,
+				)
+				return
+			}
+
+			data := struct {
+				Error string
+			}{
+				Error: "",
+			}
+
+			if err := tmpl.ExecuteTemplate(
+				w,
+				"login.html",
+				data,
+			); err != nil {
+				log.Println("Login template error:", err)
+
+				http.Error(
+					w,
+					"Unable to render login page",
+					http.StatusInternalServerError,
+				)
+			}
+
+			return
+		}
+
 		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			http.Error(
+				w,
+				"Method not allowed",
+				http.StatusMethodNotAllowed,
+			)
 			return
 		}
 
 		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Unable to process booking", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Unable to process login",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
-		checkIn := r.FormValue("check_in")
-		checkOut := r.FormValue("check_out")
-		guestsText := r.FormValue("guests")
-		roomIDText := r.FormValue("room")
+		username := r.FormValue("username")
+		password := r.FormValue("password")
 
-		// Make sure both dates were provided.
+		adminUsername := os.Getenv("ADMIN_USERNAME")
+		adminPasswordHash := os.Getenv("ADMIN_PASSWORD_HASH")
+
+		if adminUsername == "" || adminPasswordHash == "" {
+			log.Println("Admin credentials are not configured")
+
+			http.Error(
+				w,
+				"Admin authentication is not configured",
+				http.StatusInternalServerError,
+			)
+
+			return
+		}
+
+		if username != adminUsername {
+			data := struct {
+				Error string
+			}{
+				Error: "Invalid username or password.",
+			}
+
+			tmpl.ExecuteTemplate(w, "login.html", data)
+			return
+		}
+
+		err := bcrypt.CompareHashAndPassword(
+			[]byte(adminPasswordHash),
+			[]byte(password),
+		)
+
+		if err != nil {
+			data := struct {
+				Error string
+			}{
+				Error: "Invalid username or password.",
+			}
+
+			tmpl.ExecuteTemplate(w, "login.html", data)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     sessionCookieName,
+			Value:    "authenticated",
+			Path:     "/admin",
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			Secure:   false,
+			MaxAge:   60 * 60 * 8,
+		})
+
+		log.Println("Admin login successful")
+
+		http.Redirect(
+			w,
+			r,
+			"/admin",
+			http.StatusSeeOther,
+		)
+	})
+
+	// =========================================================
+	// ADMIN LOGOUT
+	// =========================================================
+
+	http.HandleFunc("/admin/logout", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(
+				w,
+				"Method not allowed",
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     sessionCookieName,
+			Value:    "",
+			Path:     "/admin",
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			Secure:   false,
+			MaxAge:   -1,
+		})
+
+		log.Println("Admin logged out")
+
+		http.Redirect(
+			w,
+			r,
+			"/admin/login",
+			http.StatusSeeOther,
+		)
+	})
+
+	// =========================================================
+	// ADMIN DASHBOARD
+	// =========================================================
+
+	http.HandleFunc("/admin", requireAdmin(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(
+				w,
+				"Method not allowed",
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
+
+		data, err := loadDashboardData(db)
+
+		if err != nil {
+			log.Println("Failed to load dashboard:", err)
+
+			http.Error(
+				w,
+				"Unable to load dashboard",
+				http.StatusInternalServerError,
+			)
+
+			return
+		}
+
+		if err := tmpl.ExecuteTemplate(
+			w,
+			"dashboard.html",
+			data,
+		); err != nil {
+			log.Println("Dashboard template error:", err)
+
+			http.Error(
+				w,
+				"Unable to render dashboard",
+				http.StatusInternalServerError,
+			)
+		}
+	}))
+
+	// =========================================================
+	// ADMIN ROOM AVAILABILITY
+	// =========================================================
+
+	http.HandleFunc("/admin/availability", requireAdmin(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(
+				w,
+				"Method not allowed",
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
+
+		checkIn := r.URL.Query().Get("check_in")
+		checkOut := r.URL.Query().Get("check_out")
+
 		if checkIn == "" || checkOut == "" {
 			http.Error(
 				w,
@@ -80,21 +425,34 @@ func main() {
 			return
 		}
 
-		// Validate check-in date.
-		checkInDate, err := time.Parse("2006-01-02", checkIn)
+		checkInDate, err := time.Parse(
+			"2006-01-02",
+			checkIn,
+		)
+
 		if err != nil {
-			http.Error(w, "Invalid check-in date", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Invalid check-in date",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
-		// Validate check-out date.
-		checkOutDate, err := time.Parse("2006-01-02", checkOut)
+		checkOutDate, err := time.Parse(
+			"2006-01-02",
+			checkOut,
+		)
+
 		if err != nil {
-			http.Error(w, "Invalid check-out date", http.StatusBadRequest)
+			http.Error(
+				w,
+				"Invalid check-out date",
+				http.StatusBadRequest,
+			)
 			return
 		}
 
-		// Check-out must be after check-in.
 		if !checkOutDate.After(checkInDate) {
 			http.Error(
 				w,
@@ -104,8 +462,171 @@ func main() {
 			return
 		}
 
-		// Convert guests to an integer.
+		availability := []RoomAvailability{}
+
+		for _, room := range rooms {
+			var existingBooking int
+
+			err := db.QueryRow(`
+				SELECT COUNT(*)
+				FROM bookings
+				WHERE room_id = ?
+				AND check_in < ?
+				AND check_out > ?
+			`,
+				room.ID,
+				checkOut,
+				checkIn,
+			).Scan(&existingBooking)
+
+			if err != nil {
+				log.Println(
+					"Failed to check room availability:",
+					err,
+				)
+
+				http.Error(
+					w,
+					"Unable to check room availability",
+					http.StatusInternalServerError,
+				)
+
+				return
+			}
+
+			availability = append(
+				availability,
+				RoomAvailability{
+					Name:      room.Name,
+					Available: existingBooking == 0,
+				},
+			)
+		}
+
+		availableCount := 0
+
+		for _, room := range availability {
+			if room.Available {
+				availableCount++
+			}
+		}
+
+		data, err := loadDashboardData(db)
+
+		if err != nil {
+			log.Println(
+				"Failed to load dashboard data:",
+				err,
+			)
+
+			http.Error(
+				w,
+				"Unable to load dashboard data",
+				http.StatusInternalServerError,
+			)
+
+			return
+		}
+
+		data.AvailableRooms = availableCount
+		data.CheckIn = checkIn
+		data.CheckOut = checkOut
+		data.Availability = availability
+
+		if err := tmpl.ExecuteTemplate(
+			w,
+			"dashboard.html",
+			data,
+		); err != nil {
+			log.Println(
+				"Availability template error:",
+				err,
+			)
+
+			http.Error(
+				w,
+				"Unable to show availability",
+				http.StatusInternalServerError,
+			)
+		}
+	}))
+
+	// =========================================================
+	// BOOKING HANDLER
+	// =========================================================
+
+	http.HandleFunc("/book", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(
+				w,
+				"Method not allowed",
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
+
+		if err := r.ParseForm(); err != nil {
+			http.Error(
+				w,
+				"Unable to process booking",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		checkIn := r.FormValue("check_in")
+		checkOut := r.FormValue("check_out")
+		guestsText := r.FormValue("guests")
+		roomIDText := r.FormValue("room")
+
+		if checkIn == "" || checkOut == "" {
+			http.Error(
+				w,
+				"Check-in and check-out dates are required",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		checkInDate, err := time.Parse(
+			"2006-01-02",
+			checkIn,
+		)
+
+		if err != nil {
+			http.Error(
+				w,
+				"Invalid check-in date",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		checkOutDate, err := time.Parse(
+			"2006-01-02",
+			checkOut,
+		)
+
+		if err != nil {
+			http.Error(
+				w,
+				"Invalid check-out date",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		if !checkOutDate.After(checkInDate) {
+			http.Error(
+				w,
+				"Check-out date must be after check-in date",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
 		guests, err := strconv.Atoi(guestsText)
+
 		if err != nil || guests < 1 {
 			http.Error(
 				w,
@@ -115,8 +636,8 @@ func main() {
 			return
 		}
 
-		// Convert room ID to an integer.
 		roomID, err := strconv.Atoi(roomIDText)
+
 		if err != nil {
 			http.Error(
 				w,
@@ -126,7 +647,6 @@ func main() {
 			return
 		}
 
-		// Find the selected room.
 		var selectedRoom Room
 		foundRoom := false
 
@@ -147,7 +667,6 @@ func main() {
 			return
 		}
 
-		// Make sure the number of guests fits the room.
 		if guests > selectedRoom.Capacity {
 			http.Error(
 				w,
@@ -157,8 +676,6 @@ func main() {
 			return
 		}
 
-		// Check whether the room is already booked
-		// during any part of the requested stay.
 		var existingBooking int
 
 		availabilityQuery := `
@@ -177,7 +694,10 @@ func main() {
 		).Scan(&existingBooking)
 
 		if err != nil {
-			log.Println("Failed to check room availability:", err)
+			log.Println(
+				"Failed to check room availability:",
+				err,
+			)
 
 			http.Error(
 				w,
@@ -187,8 +707,6 @@ func main() {
 			return
 		}
 
-		// If a booking overlaps, show the professional
-		// room unavailable page.
 		if existingBooking > 0 {
 			unavailableData := struct {
 				RoomName string
@@ -205,7 +723,10 @@ func main() {
 				"unavailable.html",
 				unavailableData,
 			); err != nil {
-				log.Println("Unavailable template error:", err)
+				log.Println(
+					"Unavailable template error:",
+					err,
+				)
 
 				http.Error(
 					w,
@@ -217,7 +738,6 @@ func main() {
 			return
 		}
 
-		// The room is available, so create the booking.
 		query := `
 			INSERT INTO bookings (
 				check_in,
@@ -237,7 +757,10 @@ func main() {
 		)
 
 		if err != nil {
-			log.Println("Failed to save booking:", err)
+			log.Println(
+				"Failed to save booking:",
+				err,
+			)
 
 			http.Error(
 				w,
@@ -248,8 +771,12 @@ func main() {
 		}
 
 		bookingID, err := result.LastInsertId()
+
 		if err != nil {
-			log.Println("Failed to get booking ID:", err)
+			log.Println(
+				"Failed to get booking ID:",
+				err,
+			)
 
 			http.Error(
 				w,
@@ -266,7 +793,6 @@ func main() {
 		log.Println("Guests:", guests)
 		log.Println("Room:", selectedRoom.Name)
 
-		// Data sent to the confirmation page.
 		confirmationData := struct {
 			ID       int64
 			RoomName string
@@ -288,18 +814,23 @@ func main() {
 			"confirmation.html",
 			confirmationData,
 		); err != nil {
-			log.Println("Confirmation template error:", err)
+			log.Println(
+				"Confirmation template error:",
+				err,
+			)
 
 			http.Error(
 				w,
 				"Unable to show confirmation",
 				http.StatusInternalServerError,
 			)
-			return
 		}
 	})
 
-	// Serve CSS and JavaScript files.
+	// =========================================================
+	// STATIC FILES
+	// =========================================================
+
 	http.Handle(
 		"/static/",
 		http.StripPrefix(
@@ -308,7 +839,10 @@ func main() {
 		),
 	)
 
-	// Homepage.
+	// =========================================================
+	// HOMEPAGE
+	// =========================================================
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -336,7 +870,9 @@ func main() {
 		}
 	})
 
-	log.Println("Hotel platform running at http://localhost:8081")
+	log.Println(
+		"Hotel platform running at http://localhost:8081",
+	)
 
 	log.Fatal(
 		http.ListenAndServe(":8081", nil),

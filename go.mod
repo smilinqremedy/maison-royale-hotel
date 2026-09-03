@@ -2,7 +2,10 @@ module maison-royale
 
 go 1.22
 
-require modernc.org/sqlite v1.34.5
+require (
+	golang.org/x/crypto v0.28.0
+	modernc.org/sqlite v1.34.5
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect

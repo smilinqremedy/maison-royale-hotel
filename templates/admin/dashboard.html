@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Maison Royale — Administration</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+        header {
+            background: #111;
+            color: white;
+            padding: 24px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 3px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            color: #ccc;
+        }
+
+        .logout-button {
+            background: #fff;
+            color: #111;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .logout-button:hover {
+            background: #ddd;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 10px;
+            color: #666;
+            font-size: 15px;
+        }
+
+        .stat-card strong {
+            font-size: 32px;
+        }
+
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .availability-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            min-width: 190px;
+        }
+
+        .check-button {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #111;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .check-button:hover {
+            background: #333;
+        }
+
+        .availability-list {
+            margin-top: 25px;
+        }
+
+        .room-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .room-row:last-child {
+            border-bottom: none;
+        }
+
+        .available {
+            color: #16803c;
+            font-weight: bold;
+        }
+
+        .booked {
+            color: #c62828;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 14px 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #fafafa;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #777;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 20px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .availability-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-group input {
+                width: 100%;
+            }
+
+            .check-button {
+                width: 100%;
+            }
+
+            .section {
+                padding: 20px;
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 700px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>MAISON ROYALE</h1>
+        <p>Hotel Administration Dashboard</p>
+    </div>
+
+    <form action="/admin/logout" method="POST">
+        <button type="submit" class="logout-button">
+            Logout
+        </button>
+    </form>
+</header>
+
+<main class="container">
+
+    <!-- Statistics -->
+    <section class="stats">
+
+        <div class="stat-card">
+            <h3>Total Bookings</h3>
+            <strong>{{.TotalBookings}}</strong>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Rooms</h3>
+            <strong>{{.TotalRooms}}</strong>
+        </div>
+
+        <div class="stat-card">
+            <h3>Available Rooms</h3>
+            <strong>{{.AvailableRooms}}</strong>
+        </div>
+
+    </section>
+
+    <!-- Availability -->
+    <section class="section">
+
+        <h2>Check Room Availability</h2>
+
+        <form action="/admin/availability" method="GET" class="availability-form">
+
+            <div class="form-group">
+                <label for="check_in">Check-in</label>
+
+                <input
+                    type="date"
+                    id="check_in"
+                    name="check_in"
+                    value="{{.CheckIn}}"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="check_out">Check-out</label>
+
+                <input
+                    type="date"
+                    id="check_out"
+                    name="check_out"
+                    value="{{.CheckOut}}"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="check-button">
+                Check Availability
+            </button>
+
+        </form>
+
+        {{if .Availability}}
+
+        <div class="availability-list">
+
+            {{range .Availability}}
+
+            <div class="room-row">
+
+                <span>
+                    {{.Name}}
+                </span>
+
+                {{if .Available}}
+
+                <span class="available">
+                    Available
+                </span>
+
+                {{else}}
+
+                <span class="booked">
+                    Booked
+                </span>
+
+                {{end}}
+
+            </div>
+
+            {{end}}
+
+        </div>
+
+        {{end}}
+
+    </section>
+
+    <!-- Recent Bookings -->
+    <section class="section">
+
+        <h2>Recent Bookings</h2>
+
+        {{if .Bookings}}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Room</th>
+                    <th>Check-in</th>
+                    <th>Check-out</th>
+                    <th>Guests</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {{range .Bookings}}
+
+                <tr>
+                    <td>#{{.ID}}</td>
+                    <td>{{.RoomName}}</td>
+                    <td>{{.CheckIn}}</td>
+                    <td>{{.CheckOut}}</td>
+                    <td>{{.Guests}}</td>
+                </tr>
+
+                {{end}}
+
+            </tbody>
+
+        </table>
+
+        {{else}}
+
+        <p>No bookings have been made yet.</p>
+
+        {{end}}
+
+    </section>
+
+</main>
+
+<footer>
+    Maison Royale Administration · Hotel Management System
+</footer>
+
+</body>
+</html>
