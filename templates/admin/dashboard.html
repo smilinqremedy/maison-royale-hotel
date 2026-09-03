@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Maison Royale — Administration</title>
+    <title>Admin Dashboard | Maison Royale</title>
 
     <style>
         * {
@@ -13,7 +13,7 @@
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background: #f5f5f5;
             color: #222;
         }
@@ -25,32 +25,32 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
         }
 
-        header h1 {
-            margin: 0;
-            font-size: 28px;
-            letter-spacing: 3px;
+        .brand {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
         }
 
-        header p {
-            margin: 6px 0 0;
-            color: #ccc;
+        .subtitle {
+            font-size: 13px;
+            color: #bbb;
+            margin-top: 5px;
         }
 
         .logout-button {
-            background: #fff;
-            color: #111;
+            background: #c0392b;
+            color: white;
             border: none;
-            padding: 10px 18px;
+            padding: 11px 18px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
         }
 
         .logout-button:hover {
-            background: #ddd;
+            background: #a93226;
         }
 
         .container {
@@ -59,11 +59,15 @@
             padding: 0 20px;
         }
 
+        h1 {
+            margin-bottom: 30px;
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
         }
 
         .stat-card {
@@ -75,12 +79,15 @@
 
         .stat-card h3 {
             margin: 0 0 10px;
-            color: #666;
-            font-size: 15px;
+            font-size: 14px;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .stat-card strong {
+        .number {
             font-size: 32px;
+            font-weight: bold;
         }
 
         .section {
@@ -97,36 +104,33 @@
         }
 
         .availability-form {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
             gap: 15px;
             align-items: end;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-        }
-
-        .form-group label {
-            font-size: 14px;
+        label {
+            display: block;
+            margin-bottom: 7px;
             font-weight: bold;
+            font-size: 14px;
         }
 
-        .form-group input {
-            padding: 11px;
+        input[type="date"] {
+            width: 100%;
+            padding: 12px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            min-width: 190px;
+            font-size: 15px;
         }
 
         .check-button {
-            padding: 11px 20px;
-            border: none;
-            border-radius: 6px;
+            padding: 12px 22px;
             background: #111;
             color: white;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
         }
@@ -139,26 +143,30 @@
             margin-top: 25px;
         }
 
-        .room-row {
+        .availability-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px;
+            padding: 15px 0;
             border-bottom: 1px solid #eee;
         }
 
-        .room-row:last-child {
+        .availability-item:last-child {
             border-bottom: none;
         }
 
         .available {
-            color: #16803c;
+            color: #27ae60;
             font-weight: bold;
         }
 
         .booked {
-            color: #c62828;
+            color: #c0392b;
             font-weight: bold;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
         }
 
         table {
@@ -168,28 +176,53 @@
 
         th,
         td {
+            padding: 15px 12px;
             text-align: left;
-            padding: 14px 10px;
             border-bottom: 1px solid #eee;
         }
 
         th {
             background: #fafafa;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
             font-size: 14px;
         }
 
-        footer {
-            text-align: center;
-            padding: 30px;
+        .booking-id {
+            font-weight: bold;
+        }
+
+        .cancel-button {
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 9px 13px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .cancel-button:hover {
+            background: #a93226;
+        }
+
+        .empty-message {
+            padding: 20px 0;
             color: #777;
-            font-size: 14px;
+            text-align: center;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 800px) {
             header {
                 padding: 20px;
                 flex-direction: column;
                 align-items: flex-start;
+                gap: 15px;
             }
 
             .stats {
@@ -197,25 +230,15 @@
             }
 
             .availability-form {
-                flex-direction: column;
-                align-items: stretch;
+                grid-template-columns: 1fr;
             }
 
-            .form-group input {
-                width: 100%;
-            }
-
-            .check-button {
-                width: 100%;
+            .container {
+                margin-top: 25px;
             }
 
             .section {
                 padding: 20px;
-                overflow-x: auto;
-            }
-
-            table {
-                min-width: 700px;
             }
         }
     </style>
@@ -225,8 +248,8 @@
 
 <header>
     <div>
-        <h1>MAISON ROYALE</h1>
-        <p>Hotel Administration Dashboard</p>
+        <div class="brand">MAISON ROYALE</div>
+        <div class="subtitle">Hotel Administration Dashboard</div>
     </div>
 
     <form action="/admin/logout" method="POST">
@@ -236,62 +259,72 @@
     </form>
 </header>
 
-<main class="container">
+<div class="container">
 
-    <!-- Statistics -->
-    <section class="stats">
+    <h1>Dashboard</h1>
+
+    <div class="stats">
 
         <div class="stat-card">
             <h3>Total Bookings</h3>
-            <strong>{{.TotalBookings}}</strong>
+            <div class="number">
+                {{.TotalBookings}}
+            </div>
         </div>
 
         <div class="stat-card">
             <h3>Total Rooms</h3>
-            <strong>{{.TotalRooms}}</strong>
+            <div class="number">
+                {{.TotalRooms}}
+            </div>
         </div>
 
         <div class="stat-card">
             <h3>Available Rooms</h3>
-            <strong>{{.AvailableRooms}}</strong>
+            <div class="number">
+                {{.AvailableRooms}}
+            </div>
         </div>
 
-    </section>
+    </div>
 
-    <!-- Availability -->
-    <section class="section">
+    <div class="section">
 
         <h2>Check Room Availability</h2>
 
-        <form action="/admin/availability" method="GET" class="availability-form">
+        <form action="/admin/availability" method="GET">
 
-            <div class="form-group">
-                <label for="check_in">Check-in</label>
+            <div class="availability-form">
 
-                <input
-                    type="date"
-                    id="check_in"
-                    name="check_in"
-                    value="{{.CheckIn}}"
-                    required
-                >
+                <div>
+                    <label for="check_in">Check-in</label>
+
+                    <input
+                        type="date"
+                        id="check_in"
+                        name="check_in"
+                        value="{{.CheckIn}}"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label for="check_out">Check-out</label>
+
+                    <input
+                        type="date"
+                        id="check_out"
+                        name="check_out"
+                        value="{{.CheckOut}}"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="check-button">
+                    Check Availability
+                </button>
+
             </div>
-
-            <div class="form-group">
-                <label for="check_out">Check-out</label>
-
-                <input
-                    type="date"
-                    id="check_out"
-                    name="check_out"
-                    value="{{.CheckOut}}"
-                    required
-                >
-            </div>
-
-            <button type="submit" class="check-button">
-                Check Availability
-            </button>
 
         </form>
 
@@ -301,7 +334,7 @@
 
             {{range .Availability}}
 
-            <div class="room-row">
+            <div class="availability-item">
 
                 <span>
                     {{.Name}}
@@ -329,58 +362,101 @@
 
         {{end}}
 
-    </section>
+    </div>
 
-    <!-- Recent Bookings -->
-    <section class="section">
+    <div class="section">
 
         <h2>Recent Bookings</h2>
 
         {{if .Bookings}}
 
-        <table>
+        <div class="table-wrapper">
 
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Room</th>
-                    <th>Check-in</th>
-                    <th>Check-out</th>
-                    <th>Guests</th>
-                </tr>
-            </thead>
+            <table>
 
-            <tbody>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Room</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Guests</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
 
-                {{range .Bookings}}
+                <tbody>
 
-                <tr>
-                    <td>#{{.ID}}</td>
-                    <td>{{.RoomName}}</td>
-                    <td>{{.CheckIn}}</td>
-                    <td>{{.CheckOut}}</td>
-                    <td>{{.Guests}}</td>
-                </tr>
+                    {{range .Bookings}}
 
-                {{end}}
+                    <tr>
 
-            </tbody>
+                        <td class="booking-id">
+                            #{{.ID}}
+                        </td>
 
-        </table>
+                        <td>
+                            {{.RoomName}}
+                        </td>
+
+                        <td>
+                            {{.CheckIn}}
+                        </td>
+
+                        <td>
+                            {{.CheckOut}}
+                        </td>
+
+                        <td>
+                            {{.Guests}}
+                        </td>
+
+                        <td>
+
+                            <form
+                                action="/admin/bookings/cancel"
+                                method="POST"
+                                onsubmit="return confirm('Are you sure you want to cancel booking #{{.ID}}?');"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="booking_id"
+                                    value="{{.ID}}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="cancel-button"
+                                >
+                                    Cancel Booking
+                                </button>
+
+                            </form>
+
+                        </td>
+
+                    </tr>
+
+                    {{end}}
+
+                </tbody>
+
+            </table>
+
+        </div>
 
         {{else}}
 
-        <p>No bookings have been made yet.</p>
+        <div class="empty-message">
+            No bookings found.
+        </div>
 
         {{end}}
 
-    </section>
+    </div>
 
-</main>
-
-<footer>
-    Maison Royale Administration · Hotel Management System
-</footer>
+</div>
 
 </body>
 </html>

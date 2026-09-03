@@ -282,7 +282,14 @@ func main() {
 				Error: "Invalid username or password.",
 			}
 
-			tmpl.ExecuteTemplate(w, "login.html", data)
+			if err := tmpl.ExecuteTemplate(
+				w,
+				"login.html",
+				data,
+			); err != nil {
+				log.Println("Login template error:", err)
+			}
+
 			return
 		}
 
@@ -298,7 +305,14 @@ func main() {
 				Error: "Invalid username or password.",
 			}
 
-			tmpl.ExecuteTemplate(w, "login.html", data)
+			if err := tmpl.ExecuteTemplate(
+				w,
+				"login.html",
+				data,
+			); err != nil {
+				log.Println("Login template error:", err)
+			}
+
 			return
 		}
 
@@ -357,6 +371,102 @@ func main() {
 	})
 
 	// =========================================================
+	// ADMIN CANCEL BOOKING
+	// =========================================================
+
+	http.HandleFunc("/admin/bookings/cancel", requireAdmin(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(
+				w,
+				"Method not allowed",
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
+
+		if err := r.ParseForm(); err != nil {
+			http.Error(
+				w,
+				"Unable to process cancellation",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		bookingID, err := strconv.Atoi(
+			r.FormValue("booking_id"),
+		)
+
+		if err != nil || bookingID <= 0 {
+			http.Error(
+				w,
+				"Invalid booking ID",
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		result, err := db.Exec(
+			"DELETE FROM bookings WHERE id = ?",
+			bookingID,
+		)
+
+		if err != nil {
+			log.Println(
+				"Booking cancellation error:",
+				err,
+			)
+
+			http.Error(
+				w,
+				"Unable to cancel booking",
+				http.StatusInternalServerError,
+			)
+
+			return
+		}
+
+		rowsAffected, err := result.RowsAffected()
+
+		if err != nil {
+			log.Println(
+				"Unable to verify booking cancellation:",
+				err,
+			)
+
+			http.Error(
+				w,
+				"Unable to verify cancellation",
+				http.StatusInternalServerError,
+			)
+
+			return
+		}
+
+		if rowsAffected == 0 {
+			http.Error(
+				w,
+				"Booking not found",
+				http.StatusNotFound,
+			)
+
+			return
+		}
+
+		log.Printf(
+			"Booking #%d cancelled successfully",
+			bookingID,
+		)
+
+		http.Redirect(
+			w,
+			r,
+			"/admin",
+			http.StatusSeeOther,
+		)
+	}))
+
+	// =========================================================
 	// ADMIN DASHBOARD
 	// =========================================================
 
@@ -373,7 +483,10 @@ func main() {
 		data, err := loadDashboardData(db)
 
 		if err != nil {
-			log.Println("Failed to load dashboard:", err)
+			log.Println(
+				"Failed to load dashboard:",
+				err,
+			)
 
 			http.Error(
 				w,
@@ -389,7 +502,10 @@ func main() {
 			"dashboard.html",
 			data,
 		); err != nil {
-			log.Println("Dashboard template error:", err)
+			log.Println(
+				"Dashboard template error:",
+				err,
+			)
 
 			http.Error(
 				w,
@@ -704,6 +820,7 @@ func main() {
 				"Unable to check room availability",
 				http.StatusInternalServerError,
 			)
+
 			return
 		}
 
@@ -767,6 +884,7 @@ func main() {
 				"Unable to save booking",
 				http.StatusInternalServerError,
 			)
+
 			return
 		}
 
@@ -783,6 +901,7 @@ func main() {
 				"Unable to get booking ID",
 				http.StatusInternalServerError,
 			)
+
 			return
 		}
 
@@ -860,7 +979,10 @@ func main() {
 			"index.html",
 			data,
 		); err != nil {
-			log.Println("Template error:", err)
+			log.Println(
+				"Template error:",
+				err,
+			)
 
 			http.Error(
 				w,
