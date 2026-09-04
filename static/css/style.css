@@ -68,6 +68,12 @@ select {
     color: #d4af37;
 }
 
+.navbar nav {
+    display: flex;
+    align-items: center;
+    gap: 35px;
+}
+
 .nav-links {
     display: flex;
     align-items: center;
@@ -239,33 +245,34 @@ select {
     gap: 25px;
 }
 
-.room {
+.room-card {
     background: #151515;
     border: 1px solid #252525;
     overflow: hidden;
     transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
-.room:hover {
+.room-card:hover {
     transform: translateY(-5px);
     border-color: #d4af37;
 }
 
 .room-image {
     height: 260px;
+    background-color: #1d1d1d;
     background-size: cover;
     background-position: center;
 }
 
-.room:nth-child(1) .room-image {
+.room-card:nth-child(1) .room-image {
     background-image: url("https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1000&q=80");
 }
 
-.room:nth-child(2) .room-image {
+.room-card:nth-child(2) .room-image {
     background-image: url("https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=80");
 }
 
-.room:nth-child(3) .room-image {
+.room-card:nth-child(3) .room-image {
     background-image: url("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80");
 }
 
@@ -356,6 +363,11 @@ select {
     font-weight: 700;
 }
 
+.form-group label .optional {
+    color: #888888;
+    font-weight: 400;
+}
+
 .form-group input,
 .form-group select {
     width: 100%;
@@ -371,7 +383,50 @@ select {
     border-color: #d4af37;
 }
 
+/* Injected by static/js/app.js, so it has no markup in index.html. */
+.price-summary {
+    grid-column: 1 / -1;
+    padding: 22px;
+    background: #171717;
+    border: 1px solid #292929;
+}
+
+.price-row,
+.price-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.price-row {
+    padding: 8px 0;
+    color: #bbbbbb;
+    font-size: 14px;
+}
+
+.price-row strong {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.price-total {
+    margin-top: 14px;
+    padding-top: 18px;
+    border-top: 1px solid #333333;
+    color: #dddddd;
+    font-size: 14px;
+}
+
+.price-total strong {
+    color: #d4af37;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 26px;
+    font-weight: 400;
+}
+
 .booking-button {
+    grid-column: 1 / -1;
     width: 100%;
     padding: 16px;
     cursor: pointer;

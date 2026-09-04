@@ -65,7 +65,7 @@
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 35px;
         }
@@ -196,6 +196,19 @@
             font-weight: bold;
         }
 
+        .guest-name {
+            font-weight: bold;
+        }
+
+        .guest-contact {
+            color: #777;
+            font-size: 13px;
+        }
+
+        .booking-total {
+            white-space: nowrap;
+        }
+
         .cancel-button {
             background: #c0392b;
             color: white;
@@ -253,6 +266,13 @@
     </div>
 
     <form action="/admin/logout" method="POST">
+
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{.CSRFToken}}"
+        >
+
         <button type="submit" class="logout-button">
             Logout
         </button>
@@ -283,6 +303,13 @@
             <h3>Available Rooms</h3>
             <div class="number">
                 {{.AvailableRooms}}
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Revenue</h3>
+            <div class="number">
+                ₦{{money .TotalRevenue}}
             </div>
         </div>
 
@@ -377,10 +404,13 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Guest</th>
                         <th>Room</th>
                         <th>Check-in</th>
                         <th>Check-out</th>
                         <th>Guests</th>
+                        <th>Nights</th>
+                        <th>Total</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -393,6 +423,24 @@
 
                         <td class="booking-id">
                             #{{.ID}}
+                        </td>
+
+                        <td>
+                            <div class="guest-name">
+                                {{if .GuestName}}{{.GuestName}}{{else}}—{{end}}
+                            </div>
+
+                            {{if .GuestEmail}}
+                            <div class="guest-contact">
+                                {{.GuestEmail}}
+                            </div>
+                            {{end}}
+
+                            {{if .GuestPhone}}
+                            <div class="guest-contact">
+                                {{.GuestPhone}}
+                            </div>
+                            {{end}}
                         </td>
 
                         <td>
@@ -412,6 +460,14 @@
                         </td>
 
                         <td>
+                            {{.Nights}}
+                        </td>
+
+                        <td class="booking-total">
+                            ₦{{money .Total}}
+                        </td>
+
+                        <td>
 
                             <form
                                 action="/admin/bookings/cancel"
@@ -423,6 +479,12 @@
                                     type="hidden"
                                     name="booking_id"
                                     value="{{.ID}}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{$.CSRFToken}}"
                                 >
 
                                 <button

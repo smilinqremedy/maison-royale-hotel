@@ -206,6 +206,19 @@
             <div class="detail-row">
 
                 <span class="detail-label">
+                    Guest
+                </span>
+
+                <span class="detail-value">
+                    {{.GuestName}}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="detail-label">
                     Room
                 </span>
 
@@ -258,11 +271,41 @@
             <div class="detail-row">
 
                 <span class="detail-label">
+                    Email
+                </span>
+
+                <span class="detail-value">
+                    {{.GuestEmail}}
+                </span>
+
+            </div>
+
+
+            {{if .GuestPhone}}
+
+            <div class="detail-row">
+
+                <span class="detail-label">
+                    Phone
+                </span>
+
+                <span class="detail-value">
+                    {{.GuestPhone}}
+                </span>
+
+            </div>
+
+            {{end}}
+
+
+            <div class="detail-row">
+
+                <span class="detail-label">
                     Room Rate
                 </span>
 
                 <span class="detail-value">
-                    ₦{{.Price}} / night
+                    ₦{{money .Price}} / night
                 </span>
 
             </div>
@@ -288,7 +331,7 @@
                 </span>
 
                 <span class="detail-value">
-                    ₦{{.Total}}
+                    ₦{{money .Total}}
                 </span>
 
             </div>
@@ -319,3 +362,4 @@
 </div>
 
 </body>
+</html>

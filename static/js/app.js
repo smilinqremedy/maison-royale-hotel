@@ -2,18 +2,44 @@ document.addEventListener("DOMContentLoaded", function () {
     const checkInInput = document.getElementById("check-in");
     const checkOutInput = document.getElementById("check-out");
     const roomSelect = document.getElementById("room");
+    const guestSelect = document.getElementById("guests");
     const bookingForm = document.querySelector(".booking-form");
 
-    if (!checkInInput || !checkOutInput || !roomSelect || !bookingForm) {
+    if (
+        !checkInInput ||
+        !checkOutInput ||
+        !roomSelect ||
+        !guestSelect ||
+        !bookingForm
+    ) {
         return;
     }
 
-    // Room prices per night
-    const roomPrices = {
-        "1": 85000,
-        "2": 140000,
-        "3": 250000
-    };
+    // Rates and capacities are read from the data attributes the server
+    // renders on each room option, so they cannot drift from main.go.
+    function selectedRoomOption() {
+        return roomSelect.options[roomSelect.selectedIndex];
+    }
+
+    function selectedRoomPrice() {
+        const option = selectedRoomOption();
+
+        if (!option) {
+            return 0;
+        }
+
+        return parseInt(option.dataset.price, 10) || 0;
+    }
+
+    function selectedRoomCapacity() {
+        const option = selectedRoomOption();
+
+        if (!option) {
+            return 0;
+        }
+
+        return parseInt(option.dataset.capacity, 10) || 0;
+    }
 
     // Create price summary
     const priceSummary = document.createElement("div");
@@ -61,9 +87,8 @@ document.addEventListener("DOMContentLoaded", function () {
     function calculatePrice() {
         const checkInValue = checkInInput.value;
         const checkOutValue = checkOutInput.value;
-        const roomID = roomSelect.value;
 
-        const pricePerNight = roomPrices[roomID] || 0;
+        const pricePerNight = selectedRoomPrice();
 
         pricePerNightElement.textContent =
             formatCurrency(pricePerNight);
@@ -114,10 +139,31 @@ document.addEventListener("DOMContentLoaded", function () {
         calculatePrice
     );
 
-    roomSelect.addEventListener(
-        "change",
-        calculatePrice
-    );
+    // Keep the guest dropdown within the selected room's capacity so the form
+    // cannot offer a party size the server will reject.
+    function syncGuestOptions() {
+        const capacity = selectedRoomCapacity();
+
+        Array.prototype.forEach.call(
+            guestSelect.options,
+            function (option) {
+                const guests = parseInt(option.value, 10);
+
+                option.disabled = capacity > 0 && guests > capacity;
+            }
+        );
+
+        const selectedGuests = parseInt(guestSelect.value, 10);
+
+        if (capacity > 0 && selectedGuests > capacity) {
+            guestSelect.value = String(capacity);
+        }
+    }
+
+    roomSelect.addEventListener("change", function () {
+        syncGuestOptions();
+        calculatePrice();
+    });
 
 
     // Prevent selecting a checkout date
@@ -172,6 +218,39 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 
-    // Calculate initial price
+    // "Reserve" on a room card preselects that room. Assigning .value does not
+    // fire a change event, so the dependent updates run directly.
+    document.querySelectorAll(".reserve-room").forEach(function (link) {
+
+        link.addEventListener("click", function () {
+
+            roomSelect.value = this.dataset.roomId;
+
+            syncGuestOptions();
+            calculatePrice();
+
+        });
+
+    });
+
+
+    // Stays cannot start in the past. Built from the local date so the limit
+    // matches the server's own check.
+    function localDateValue(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return year + "-" + month + "-" + day;
+    }
+
+    const todayValue = localDateValue(new Date());
+
+    checkInInput.min = todayValue;
+    checkOutInput.min = todayValue;
+
+
+    // Apply the initial guest limits and price
+    syncGuestOptions();
     calculatePrice();
 });
