@@ -163,7 +163,11 @@
                                 Up to {{.Capacity}} guests
                             </span>
 
-                            <a href="#booking">
+                            <a
+                                href="#booking"
+                                class="reserve-room"
+                                data-room-id="{{.ID}}"
+                            >
                                 Reserve →
                             </a>
 
@@ -207,7 +211,11 @@
             </div>
 
 
-            <form class="booking-form" action="/book" method="POST">
+            <form
+                class="booking-form"
+                action="/book"
+                method="POST"
+            >
 
                 <div class="form-group">
 
@@ -372,6 +380,22 @@
 
 </footer>
 
+
+<script>
+    document.querySelectorAll(".reserve-room").forEach(function (button) {
+
+        button.addEventListener("click", function () {
+
+            const roomID = this.dataset.roomId;
+
+            const roomSelect = document.getElementById("room");
+
+            roomSelect.value = roomID;
+
+        });
+
+    });
+</script>
 
 <script src="/static/js/app.js"></script>
 

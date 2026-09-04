@@ -28,6 +28,9 @@ type Booking struct {
 	CheckIn  string
 	CheckOut string
 	Guests   int
+	Price    int
+	Nights   int
+	Total    int
 }
 
 type RoomAvailability struct {
@@ -912,6 +915,10 @@ func main() {
 		log.Println("Guests:", guests)
 		log.Println("Room:", selectedRoom.Name)
 
+		nights := int(checkOutDate.Sub(checkInDate) / (24 * time.Hour))
+
+		total := selectedRoom.Price * nights
+
 		confirmationData := struct {
 			ID       int64
 			RoomName string
@@ -919,6 +926,8 @@ func main() {
 			CheckOut string
 			Guests   int
 			Price    int
+			Nights   int
+			Total    int
 		}{
 			ID:       bookingID,
 			RoomName: selectedRoom.Name,
@@ -926,8 +935,9 @@ func main() {
 			CheckOut: checkOut,
 			Guests:   guests,
 			Price:    selectedRoom.Price,
+			Nights:   nights,
+			Total:    total,
 		}
-
 		if err := tmpl.ExecuteTemplate(
 			w,
 			"confirmation.html",
